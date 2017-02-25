@@ -44,6 +44,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -84,6 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             checkLocationPermission();
         }
 
+
         fram_map = (FrameLayout) findViewById(R.id.fram_map);
         btn_draw = (FloatingActionButton) findViewById(R.id.btn_draw);
         progressBar=(ProgressBar)findViewById(R.id.progressBar2);
@@ -100,9 +102,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // TODO Auto-generated method stub
                 if (Is_MAP_Moveable) {
                     mMap.clear();
+                    addMarkerOnMap(mPlacelist);
                     btn_draw.setImageResource(R.drawable.ic_play_dark);
                     Is_MAP_Moveable = false;
-                    CallApi();
                 } else {
                     btn_draw.setImageResource(R.drawable.ic_close_dark);
                     Is_MAP_Moveable = true;
@@ -135,6 +137,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         mlist.add(new LatLng(latitude, longitude));
 
                     case MotionEvent.ACTION_MOVE:
+                        if (Is_MAP_Moveable) {
+                            mMap.clear();
+                        }
                         // finger moves on the screen
                         mlist.add(new LatLng(latitude, longitude));
                         Draw_Polyline();
@@ -175,7 +180,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         PolygonOptions rectOptions = new PolygonOptions();
         rectOptions.addAll(mlist);
         rectOptions.strokeColor(Color.BLACK);
-        mMap.addPolygon(rectOptions);
+        Polygon polygon=mMap.addPolygon(rectOptions);
+        addMarkerOnPolygon(mPlacelist);
     }
 
     private boolean checkLocationPermission() {
@@ -325,6 +331,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 AsyncResponse mresponse = new AsyncResponse(response);
                 if(mresponse.ifSuccess()){
                     mPlacelist=mresponse.getPlacelist();
+                    Log.e("Total Locations: ", mPlacelist.size()+"");
                     addMarkerOnMap(mPlacelist);
                 }
             }else{
@@ -341,6 +348,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             markerOptions.position(latLng);
             markerOptions.title(place.getName());
             mMap.addMarker(markerOptions);
+        }
+    }
+
+    private void addMarkerOnPolygon(List<Place> mPlacelist) {
+        for(int i=0 ;i < mPlacelist.size();i++){
+            Place place=mPlacelist.get(i);
+            LatLng latLng = new LatLng(Double.parseDouble(place.getLatitude()), Double.parseDouble(place.getLongitute()));
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLng);
+            markerOptions.title(place.getName());
+            if(PolyUtil.isPointInPolygon(latLng,mlist)) {
+                mMap.addMarker(markerOptions);
+            }
         }
     }
 }

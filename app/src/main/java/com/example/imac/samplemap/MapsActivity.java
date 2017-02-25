@@ -11,6 +11,7 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -21,6 +22,10 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.example.imac.samplemap.data.AsyncLoadVolley;
+import com.example.imac.samplemap.data.AsyncResponse;
+import com.example.imac.samplemap.data.OnAsyncTaskListener;
+import com.example.imac.samplemap.model.Place;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -60,6 +65,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     List<LatLng> mlist;
     double latitude,longitude;
 
+    private AsyncLoadVolley asyncLoadVolley;
+    List<Place> mPlacelist;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,6 +80,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fram_map = (FrameLayout) findViewById(R.id.fram_map);
         btn_draw = (FloatingActionButton) findViewById(R.id.btn_draw);
         mlist=new ArrayList<LatLng>();
+        mPlacelist=new ArrayList<Place>();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -141,6 +150,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        asyncLoadVolley = new AsyncLoadVolley(getApplicationContext(), "http://jsonplaceholder.typicode.com/comments");
+        asyncLoadVolley.setOnAsyncTaskListener(AsyncTaskListener);
     }
 
     public void Draw_Polyline() {
@@ -178,6 +189,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        asyncLoadVolley.beginTask();
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -280,4 +293,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return context.getResources().getColor(id);
         }
     }
+
+    OnAsyncTaskListener AsyncTaskListener=new OnAsyncTaskListener() {
+        @Override
+        public void onTaskBegin() {
+            Log.e("onRemoteSource ", "Api start calling");
+        }
+
+        @Override
+        public void onTaskComplete(boolean success, String response) {
+            Log.e("onRemoteSource ", "Api finished calling");
+            if(success) {
+                AsyncResponse mresponse = new AsyncResponse(response);
+                if(mresponse.ifSuccess()){
+                    mPlacelist=mresponse.getPlacelist();
+                }
+            }else{
+                Snackbar.make(btn_draw,"Error in fatching data",Snackbar.LENGTH_LONG);
+            }
+        }
+    };
 }

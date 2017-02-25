@@ -2,10 +2,12 @@ package com.example.imac.samplemap;
 
 import android.*;
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -17,9 +19,11 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.imac.samplemap.data.AsyncLoadVolley;
@@ -45,7 +49,9 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -59,6 +65,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     FrameLayout fram_map;
     FloatingActionButton btn_draw;
+    ProgressBar progressBar;
     Boolean Is_MAP_Moveable = false;
 
     Projection projection;
@@ -79,6 +86,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         fram_map = (FrameLayout) findViewById(R.id.fram_map);
         btn_draw = (FloatingActionButton) findViewById(R.id.btn_draw);
+        progressBar=(ProgressBar)findViewById(R.id.progressBar2);
         mlist=new ArrayList<LatLng>();
         mPlacelist=new ArrayList<Place>();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -90,13 +98,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-
                 if (Is_MAP_Moveable) {
-
                     mMap.clear();
-                    Log.e("All Latlong on list:-", mlist.toString());
                     btn_draw.setImageResource(R.drawable.ic_play_dark);
                     Is_MAP_Moveable = false;
+                    CallApi();
                 } else {
                     btn_draw.setImageResource(R.drawable.ic_close_dark);
                     Is_MAP_Moveable = true;
@@ -150,8 +156,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        asyncLoadVolley = new AsyncLoadVolley(getApplicationContext(), "http://jsonplaceholder.typicode.com/comments");
+        asyncLoadVolley = new AsyncLoadVolley(getApplicationContext(), "https://maps.googleapis.com/maps/api/place/nearbysearch/json");
         asyncLoadVolley.setOnAsyncTaskListener(AsyncTaskListener);
+
     }
 
     public void Draw_Polyline() {
@@ -190,8 +197,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        asyncLoadVolley.beginTask();
-
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -221,21 +226,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mCurrLocationMarker != null) {
             mCurrLocationMarker.remove();
         }
-
-        //Place current location marker
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(latLng);
-        markerOptions.title("Current Position");
-        mCurrLocationMarker = mMap.addMarker(markerOptions);
-
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(14));
 
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
+        CallApi();
     }
 
     @Override
@@ -294,23 +293,54 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public void CallApi(){
+        Map<String,String> param=new HashMap<String, String>();
+        param.put("location",mLastLocation.getLatitude()+","+mLastLocation.getLongitude());
+        param.put("radius","5000");
+        param.put("types","atm,restaurant,bank");
+        param.put("sensor","true");
+        //param.put("key",getResources().getString(R.string.google_maps_key));
+        param.put("key","AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
+
+        asyncLoadVolley.setParameters(param);
+        asyncLoadVolley.beginTask("?location="+param.get("location")+
+                "&radius=50000&types=atm,restaurant,bank"+
+                "&sensor=true&key=AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
+    }
     OnAsyncTaskListener AsyncTaskListener=new OnAsyncTaskListener() {
         @Override
         public void onTaskBegin() {
             Log.e("onRemoteSource ", "Api start calling");
+            progressBar.setVisibility(View.VISIBLE);
         }
 
         @Override
         public void onTaskComplete(boolean success, String response) {
             Log.e("onRemoteSource ", "Api finished calling");
+            if(progressBar.getVisibility() == View.VISIBLE){
+                progressBar.setVisibility(View.GONE);
+            }
+
             if(success) {
                 AsyncResponse mresponse = new AsyncResponse(response);
                 if(mresponse.ifSuccess()){
                     mPlacelist=mresponse.getPlacelist();
+                    addMarkerOnMap(mPlacelist);
                 }
             }else{
                 Snackbar.make(btn_draw,"Error in fatching data",Snackbar.LENGTH_LONG);
             }
         }
     };
+
+    private void addMarkerOnMap(List<Place> mPlacelist) {
+        for(int i=0 ;i < mPlacelist.size();i++){
+            Place place=mPlacelist.get(i);
+            LatLng latLng = new LatLng(Double.parseDouble(place.getLatitude()), Double.parseDouble(place.getLongitute()));
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLng);
+            markerOptions.title(place.getName());
+            mMap.addMarker(markerOptions);
+        }
+    }
 }

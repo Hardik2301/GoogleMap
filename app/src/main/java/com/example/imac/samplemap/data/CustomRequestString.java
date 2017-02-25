@@ -26,8 +26,6 @@ public class CustomRequestString extends Request<String> {
         super(requestMethod, url, errorListener); // Call parent constructor
         this.params = params;
         this.listener = responseListener;
-        
-        Log.e("IN REQUEST", params.toString());
     }
     
     // We HAVE TO implement this function
@@ -41,7 +39,12 @@ public class CustomRequestString extends Request<String> {
     public Map<String, String> getParams() throws AuthFailureError {
         return params;
     }
-	
+
+    @Override
+    public String getUrl() {
+        return super.getUrl();
+    }
+
     // Same as JsonObjectRequest#parseNetworkResponse
     @Override
     protected Response<String> parseNetworkResponse(NetworkResponse response) {

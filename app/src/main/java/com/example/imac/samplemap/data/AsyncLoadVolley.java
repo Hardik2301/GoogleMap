@@ -45,16 +45,14 @@ public class AsyncLoadVolley {
     }
     
     public void setParameters(Map<String, String> map) {
-    	
     	params=map;
 	}
     
-    public void beginTask() {
-    	
+    public void beginTask(String param) {
     	asyncTaskListener.onTaskBegin();
-    	
-    	CustomRequestString request = new CustomRequestString(Request.Method.GET, url, params, listener, errorListener);
+    	CustomRequestString request = new CustomRequestString(Request.Method.GET, url+param, params, listener, errorListener);
 		queue.add(request);
+		Log.e("beginTask: Url is - ", request.getUrl());
 	}
     
     Response.Listener<String> listener = new Response.Listener<String>() {

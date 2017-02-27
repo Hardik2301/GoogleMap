@@ -72,10 +72,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ProgressBar progressBar;
     Boolean Is_MAP_Moveable = false;
 
+    Polygon mPolygon;
     Projection projection;
     List<LatLng> mlist;
     List<LatLng> mBorderLatLng;
     double latitude,longitude;
+    String pagetoken="";
+    boolean hasnextToken=true;
 
     private AsyncLoadVolley asyncLoadVolley;
     List<Place> mPlacelist;
@@ -138,8 +141,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 switch (eventaction) {
                     case MotionEvent.ACTION_DOWN:
                         mlist.clear();
-                        // finger touches the screen
-                        mlist.add(new LatLng(latitude, longitude));
 
                     case MotionEvent.ACTION_MOVE:
                         if (Is_MAP_Moveable) {
@@ -185,7 +186,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         PolygonOptions rectOptions = new PolygonOptions();
         rectOptions.addAll(mlist);
         rectOptions.strokeColor(Color.BLACK);
-        Polygon polygon=mMap.addPolygon(rectOptions);
+        mPolygon=mMap.addPolygon(rectOptions);
         addMarkerOnPolygon(mPlacelist);
     }
 
@@ -339,7 +340,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         asyncLoadVolley.setParameters(param);
         asyncLoadVolley.beginTask("?location="+param.get("location")+
                 "&radius=50000&types=atm,restaurant,bank"+
-                "&sensor=true&key=AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
+                "&sensor=true&key=AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8&pagetoken="+pagetoken);
     }
     OnAsyncTaskListener AsyncTaskListener=new OnAsyncTaskListener() {
         @Override
@@ -355,16 +356,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 progressBar.setVisibility(View.GONE);
             }
 
-            if(success) {
+            if(success && hasnextToken) {
                 AsyncResponse mresponse = new AsyncResponse(response);
                 if(mresponse.ifSuccess()){
-                    mPlacelist=mresponse.getPlacelist();
+                    mPlacelist.addAll(mresponse.getPlacelist());
                     Log.e("Total Locations: ", mPlacelist.size()+"");
-                    addMarkerOnMap(mPlacelist);
+                }
+
+                if(mresponse.hasNextToken()){
+                    hasnextToken=true;
+                    pagetoken=mresponse.getNextToken();
+                }else {
+                    hasnextToken=false;
+                    pagetoken="";
                 }
             }else{
                 Snackbar.make(btn_draw,"Error in fatching data",Snackbar.LENGTH_LONG);
             }
+            addMarkerOnMap(mPlacelist);
         }
     };
 
@@ -389,7 +398,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(latLng);
             markerOptions.title(place.getName());
-            if(PolyUtil.isPointInPolygon(latLng,mlist)) {
+            if(PolyUtil.pointInPolygon(latLng,mPolygon)) {
                 mMap.addMarker(markerOptions);
             }
         }

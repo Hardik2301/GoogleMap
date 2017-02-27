@@ -69,7 +69,6 @@ public class AsyncLoadVolley {
 		
 		@Override
 		public void onErrorResponse(VolleyError error) {
-			Log.e(TAG, "onErrorResponse : "+error.getMessage());
 			asyncTaskListener.onTaskComplete(false, error.getMessage());
 		}
 	};

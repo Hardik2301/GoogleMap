@@ -41,6 +41,26 @@ public class AsyncResponse {
             return success;
         }
 	}
+
+	public boolean hasNextToken()
+	{
+		if(jsonObject.has("next_page_token")){
+			return true;
+		}
+		return false;
+	}
+
+	public String getNextToken()
+	{
+		if(jsonObject.has("next_page_token")){
+			try {
+				return jsonObject.getString("next_page_token");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
 	
 	public List<Place> getPlacelist() {
 

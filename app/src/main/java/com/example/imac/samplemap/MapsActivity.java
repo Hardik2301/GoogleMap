@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.os.Build;
@@ -41,7 +42,9 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
@@ -71,6 +74,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Projection projection;
     List<LatLng> mlist;
+    List<LatLng> mBorderLatLng;
     double latitude,longitude;
 
     private AsyncLoadVolley asyncLoadVolley;
@@ -91,6 +95,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         progressBar=(ProgressBar)findViewById(R.id.progressBar2);
         mlist=new ArrayList<LatLng>();
         mPlacelist=new ArrayList<Place>();
+        mBorderLatLng = new ArrayList<LatLng>();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -213,6 +218,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+
+        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+            @Override
+            public void onCameraIdle() {
+                mBorderLatLng.clear();
+                projection = mMap.getProjection();
+                int viewportWidth = fram_map.getWidth();
+                int viewportHeight = fram_map.getHeight();
+
+                LatLng topLeft     = projection.fromScreenLocation(new Point(0, 0));
+                LatLng topRight    = projection.fromScreenLocation(new Point(viewportWidth, 0));
+                LatLng bottomRight = projection.fromScreenLocation(new Point(viewportWidth, viewportHeight));
+                LatLng bottomLeft  = projection.fromScreenLocation(new Point(0, viewportHeight));
+
+                mBorderLatLng.add(topLeft);
+                mBorderLatLng.add(topRight);
+                mBorderLatLng.add(bottomLeft);
+                mBorderLatLng.add(bottomRight);
+
+                if(mLastLocation != null) {
+                    CallApi();
+                }
+            }
+        });
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -240,7 +269,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
-        CallApi();
     }
 
     @Override
@@ -341,13 +369,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     private void addMarkerOnMap(List<Place> mPlacelist) {
+        mMap.clear();
         for(int i=0 ;i < mPlacelist.size();i++){
             Place place=mPlacelist.get(i);
             LatLng latLng = new LatLng(Double.parseDouble(place.getLatitude()), Double.parseDouble(place.getLongitute()));
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(latLng);
             markerOptions.title(place.getName());
-            mMap.addMarker(markerOptions);
+            if(PolyUtil.FindLatLngFromList(latLng,mBorderLatLng)) {
+                mMap.addMarker(markerOptions);
+            }
         }
     }
 

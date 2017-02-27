@@ -1,5 +1,7 @@
 package com.example.imac.samplemap;
 
+import android.util.Log;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
@@ -41,5 +43,22 @@ public class PolyUtil {
         double x = (pY - bee) / m; // algebra is neat!
 
         return x > pX;
+    }
+
+    public static boolean FindLatLngFromList(LatLng tap, List<LatLng> vertices){
+
+        boolean flag=false;
+        LatLng topleft=vertices.get(0);
+        LatLng topright=vertices.get(1);
+        LatLng Bottomleft=vertices.get(2);
+        LatLng Bottomright=vertices.get(3);
+
+        if(topleft.latitude > tap.latitude && tap.latitude > Bottomleft.latitude &&
+                topleft.longitude < tap.longitude && tap.longitude < topright.longitude){
+            Log.e("FindLatLngFromList: ", tap.toString() + " - yes");
+            return true;
+        }
+        Log.e("FindLatLngFromList: ", tap.toString() + " - No");
+        return false;
     }
 }

@@ -73,7 +73,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     FrameLayout fram_map;
     FloatingActionButton btn_draw;
     ProgressBar progressBar;
-    Boolean Is_MAP_Moveable = false;
+    Boolean Is_MAP_Moveable = true;
+    Boolean Is_Draggable = false;
 
     Polygon mPolygon;
     Projection projection;
@@ -111,14 +112,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                if (Is_MAP_Moveable) {
+                if (Is_Draggable) {
                     mMap.clear();
                     addMarkerOnMap(mPlacelist);
                     btn_draw.setImageResource(R.drawable.ic_play_dark);
-                    Is_MAP_Moveable = false;
+                    Is_Draggable = false;
                 } else {
+                    Is_MAP_Moveable = false;
                     btn_draw.setImageResource(R.drawable.ic_close_dark);
-                    Is_MAP_Moveable = true;
+                    Is_Draggable = true;
                 }
             }
         });
@@ -137,35 +139,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 LatLng latLng = mMap.getProjection().fromScreenLocation(x_y_points);
                 latitude = latLng.latitude;
-
                 longitude = latLng.longitude;
 
                 int eventaction = event.getAction();
                 switch (eventaction) {
                     case MotionEvent.ACTION_DOWN:
                         mlist.clear();
-                        if (Is_MAP_Moveable) {
+                        if (!Is_MAP_Moveable) {
                         mMap.clear();
                         }
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        /*if (Is_MAP_Moveable) {
-                            //mMap.clear();
-                        }*/
-                        // finger moves on the screen
                         mlist.add(new LatLng(latitude, longitude));
                         Draw_Polyline();
                         break;
                     case MotionEvent.ACTION_UP:
-                        // finger leaves the screen
-                        if(Is_MAP_Moveable && mlist.size() > 1) {
+                        if(!Is_MAP_Moveable && mlist.size() > 1) {
                             Draw_Polygon();
                         }
                         break;
                 }
 
-                if (Is_MAP_Moveable) {
-                    Log.e("on Draw complete: ", "Yes");
+                if (!Is_MAP_Moveable) {
+                    //Log.e("on Draw complete: ", "Yes");
                     return true;
                 } else {
                     return false;
@@ -179,7 +175,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void Draw_Polyline() {
-        Log.e("on Draw complete: ", "draw map called");
+        //Log.e("on Draw complete: ", "draw map called");
         PolylineOptions plineOptions=new PolylineOptions();
         plineOptions.addAll(mlist);
         plineOptions.width(7);
@@ -197,6 +193,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         rectOptions.fillColor(0x7F000000);
         mPolygon=mMap.addPolygon(rectOptions);
         addMarkerOnPolygon(mPlacelist);
+        Log.e("Draw_Polygon: List", mlist.toString());
+        Is_MAP_Moveable = true;
+        mlist.clear();
     }
 
     private boolean checkLocationPermission() {
@@ -246,7 +245,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mBorderLatLng.add(bottomLeft);
                 mBorderLatLng.add(bottomRight);
 
-                if(mLastLocation != null) {
+                if(mLastLocation != null && !Is_Draggable) {
                     CallApi();
                 }
             }
@@ -359,12 +358,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         param.put("types","atm,restaurant,bank");
         param.put("sensor","true");
         param.put("key",getResources().getString(R.string.google_maps_key));
+        param.put("key","AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
 
         asyncLoadVolley.setParameters(param);
         asyncLoadVolley.beginTask("?location="+param.get("location")+
                 "&radius=50000&types=atm,restaurant,bank"+
-                "&sensor=true&pagetoken="+pagetoken);
+                "&sensor=true&key=AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8&pagetoken="+pagetoken);
     }
+
     OnAsyncTaskListener AsyncTaskListener=new OnAsyncTaskListener() {
         @Override
         public void onTaskBegin() {

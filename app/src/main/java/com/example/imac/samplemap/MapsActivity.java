@@ -9,6 +9,8 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.drawable.ColorDrawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -52,6 +54,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -155,7 +158,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         break;
                     case MotionEvent.ACTION_UP:
                         // finger leaves the screen
-                        if(Is_MAP_Moveable) {
+                        if(Is_MAP_Moveable && mlist.size() > 1) {
                             Draw_Polygon();
                         }
                         break;
@@ -179,6 +182,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.e("on Draw complete: ", "draw map called");
         PolylineOptions plineOptions=new PolylineOptions();
         plineOptions.addAll(mlist);
+        plineOptions.width(7);
         plineOptions.geodesic(true);
         plineOptions.color(Color.BLACK);
         mMap.addPolyline(plineOptions);
@@ -186,10 +190,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void Draw_Polygon()
     {
-
         PolygonOptions rectOptions = new PolygonOptions();
         rectOptions.addAll(mlist);
+        rectOptions.strokeWidth(7);
         rectOptions.strokeColor(Color.BLACK);
+        rectOptions.fillColor(0x7F000000);
         mPolygon=mMap.addPolygon(rectOptions);
         addMarkerOnPolygon(mPlacelist);
     }
@@ -197,7 +202,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
             } else {
@@ -247,6 +251,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         });
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                //int markerpos=(int)marker.getTag();
+                //Toast.makeText(getApplicationContext(),marker.getTag().toString()+"",Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -267,6 +280,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mCurrLocationMarker.remove();
         }
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
+        try {
+            Geocoder gc = new Geocoder(this);
+            List<Address> lstAdd = gc.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            Address ad = lstAdd.get(0);
+            String str = ad.getAddressLine(0);
+            Log.e("Address from location", str);
+            Log.e("Locality", ad.getLocality());
+            Log.e("Pincode", ad.getPostalCode());
+            Log.e("Country Name", ad.getCountryName());
+        }catch (IOException e){
+            Log.e("IOException", e.getMessage());
+        }catch (Exception e){
+            Log.e("Exception", e.getMessage());
+        }finally {
+            Log.e("Finally", "Finally called");
+        }
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(14));
@@ -287,7 +317,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             == PackageManager.PERMISSION_GRANTED) {
                         mMap.setMyLocationEnabled(true);
                     }
-
                 } else {
                     Toast.makeText(this, "permission denied", Toast.LENGTH_LONG).show();
                 }
@@ -323,22 +352,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    public int getColor(Context context, int id) {
-        final int version = Build.VERSION.SDK_INT;
-        if (version >= 23) {
-            return ContextCompat.getColor(context, id);
-        } else {
-            return context.getResources().getColor(id);
-        }
-    }
-
     public void CallApi(){
         Map<String,String> param=new HashMap<String, String>();
         param.put("location",mLastLocation.getLatitude()+","+mLastLocation.getLongitude());
         param.put("radius","5000");
         param.put("types","atm,restaurant,bank");
         param.put("sensor","true");
-        //param.put("key",getResources().getString(R.string.google_maps_key));
+        param.put("key",getResources().getString(R.string.google_maps_key));
         param.put("key","AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
 
         asyncLoadVolley.setParameters(param);
@@ -366,7 +386,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mPlacelist.addAll(mresponse.getPlacelist());
                     Log.e("Total Locations: ", mPlacelist.size()+"");
                 }
-
                 if(mresponse.hasNextToken()){
                     hasnextToken=true;
                     pagetoken=mresponse.getNextToken();

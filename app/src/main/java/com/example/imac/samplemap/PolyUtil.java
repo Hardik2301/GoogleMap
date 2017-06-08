@@ -1,5 +1,8 @@
 package com.example.imac.samplemap;
 
+import android.content.Context;
+import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -122,5 +125,14 @@ public class PolyUtil {
         }
         //Log.e("FindLatLngFromList: ", tap.toString() + " - No");
         return false;
+    }
+
+    public int getColor(Context context, int id) {
+        final int version = Build.VERSION.SDK_INT;
+        if (version >= 23) {
+            return ContextCompat.getColor(context, id);
+        } else {
+            return context.getResources().getColor(id);
+        }
     }
 }

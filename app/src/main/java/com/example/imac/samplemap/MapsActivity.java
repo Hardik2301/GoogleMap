@@ -359,12 +359,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         param.put("types","atm,restaurant,bank");
         param.put("sensor","true");
         param.put("key",getResources().getString(R.string.google_maps_key));
-        param.put("key","AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8");
 
         asyncLoadVolley.setParameters(param);
         asyncLoadVolley.beginTask("?location="+param.get("location")+
                 "&radius=50000&types=atm,restaurant,bank"+
-                "&sensor=true&key=AIzaSyBJvlD3dqnz42r9obhEClc2dEJAdXt9IK8&pagetoken="+pagetoken);
+                "&sensor=true&pagetoken="+pagetoken);
     }
     OnAsyncTaskListener AsyncTaskListener=new OnAsyncTaskListener() {
         @Override

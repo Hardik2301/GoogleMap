@@ -1,11 +1,16 @@
 package com.example.imac.samplemap.model;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+
 /**
  * Created by imac on 2/25/17.
  */
 
+@Entity
 public class Place {
 
+    @PrimaryKey(autoGenerate = true)
     private String id;
     private String name;
     private String latitude;

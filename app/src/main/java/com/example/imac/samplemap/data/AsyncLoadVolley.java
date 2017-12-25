@@ -24,14 +24,12 @@ public class AsyncLoadVolley {
 	
 	private String url;
 	
-	private Context context;
-	
+
 	private ConnectionDetector connectionDetector;
 		
 	public AsyncLoadVolley(Context context, String filename) {
 		queue = Volley.newRequestQueue(context);
 		url = filename;
-		this.context = context;
 		connectionDetector = new ConnectionDetector(context);
 		init();
 	}

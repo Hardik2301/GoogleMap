@@ -107,7 +107,6 @@ public class PolyUtil {
             double blue = (ax != px) ? ((py - ay) / (px - ax)) : Double.POSITIVE_INFINITY;
             return (blue >= red);
         }
-
     }
 
     public static boolean FindLatLngFromList(LatLng tap, List<LatLng> vertices){
